@@ -1,6 +1,6 @@
 # Status
 
-> ⚠️ This extension is no longer maintained and will not receive updates or support.
+> The upstream project is no longer maintained. This checkout includes compatibility changes for GNOME Shell 50 and 51.
 
 Recommended alternative: [AppIndicator and KStatusNotifierItem Support](https://extensions.gnome.org/extension/615/appindicator-support/)
 
@@ -11,10 +11,12 @@ Tray Icons Reloaded is a [GNOME Shell](https://www.gnome.org/) extension which b
 
 ## Compatibility
 
-- It's only works with [Xorg](https://wiki.archlinux.org/index.php/GDM#Use_Xorg_backend) and XWayland.
+- Targets GNOME Shell 50 and 51 on Wayland, using XWayland for legacy tray icons. GNOME Shell 50 removed support for Xorg sessions.
 - Appindicator and similar extensions are not compatible, disable it (some distributions ship it by default ex. Ubuntu based).
 - If you have some trouble with compatibility you can try [snixembed](https://git.sr.ht/~steef/snixembed) it also adds visual native menus.
-- Master always targeting current GNOME stable release.
+- Native Wayland StatusNotifierItem/AppIndicator icons require a bridge such as snixembed; they are not handled directly by this extension.
+
+Compatibility references: [GNOME Shell 50 porting guide](https://gjs.guide/extensions/upgrading/gnome-shell-50.html) and [GNOME Shell 51 porting guide](https://gjs.guide/extensions/upgrading/gnome-shell-51.html).
 
 ## Wayland
 
@@ -41,7 +43,35 @@ If you are on Wayland and app won't run through XWayland you can force it via co
 
 ## Installation
 
-Grab it from [extensions.gnome.org](https://extensions.gnome.org/extension/2890/tray-icons-reloaded/) or unzip release to: ~/.local/share/gnome-shell/extensions.
+To install this checkout with the GNOME Shell 50 and 51 compatibility changes:
+
+1. From the project directory, build the extension package:
+
+   ```bash
+   gnome-extensions pack --extra-source=TrayIndicator.js --extra-source=AppManager.js --extra-source=preferences --out-dir=/tmp .
+   ```
+
+2. Install the package (or replace an existing installation):
+
+   ```bash
+   gnome-extensions install --force /tmp/trayIconsReloaded@selfmade.pl.shell-extension.zip
+   ```
+
+3. Save your work, log out, and log back in so GNOME Shell loads the updated extension.
+
+4. Enable the extension:
+
+   ```bash
+   gnome-extensions enable trayIconsReloaded@selfmade.pl
+   ```
+
+5. Open its preferences:
+
+   ```bash
+   gnome-extensions prefs trayIconsReloaded@selfmade.pl
+   ```
+
+If you already have the package, start at step 2 and adjust its path as needed. If you rebuild it in the same location, add `--force` to the `pack` command to replace the previous package.
 
 ## Credits
 

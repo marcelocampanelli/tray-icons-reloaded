@@ -48,7 +48,7 @@ export const TrayIndicator = GObject.registerClass(
 
             this._icons.forEach((icon) => {
                 icon.get_parent().style = this._getButtonStyle()
-                icon.set_size(this._size, this._size)
+                icon.set_size(this.size, this.size)
             })
         }
 
@@ -58,7 +58,9 @@ export const TrayIndicator = GObject.registerClass(
 
             const button = new St.Button({
                 child: icon,
-                button_mask: St.ButtonMask.ONE | St.ButtonMask.TWO | St.ButtonMask.THREE,
+                button_mask: (St.ButtonMask.PRIMARY ?? St.ButtonMask.ONE) |
+                    (St.ButtonMask.MIDDLE ?? St.ButtonMask.TWO) |
+                    (St.ButtonMask.SECONDARY ?? St.ButtonMask.THREE),
                 style: this._getButtonStyle(),
                 style_class: "panel-button",
             })
@@ -68,6 +70,7 @@ export const TrayIndicator = GObject.registerClass(
             icon.set_y_align(Clutter.ActorAlign.CENTER)
             icon.inOverflow = this._overflow
             icon.timeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1000, () => {
+                icon.timeout = null
                 icon.set_size(this.size, this.size)
                 icon.ease({
                     opacity: 255,
@@ -77,9 +80,9 @@ export const TrayIndicator = GObject.registerClass(
                 this._addEffectIcon(icon)
                 return GLib.SOURCE_REMOVE
             })
-            icon.connect("destroy", () => {
-                button.destroy()
-            })
+            icon.connectObject("destroy", () => {
+                this.removeIcon(icon)
+            }, button)
 
             button.connect("touch-event", (actor, event) => {
                 this.menu.close()
@@ -116,6 +119,7 @@ export const TrayIndicator = GObject.registerClass(
 
         removeIcon(icon, ignoreCheckOverflow) {
             const index = this._icons.indexOf(icon)
+            if (index === -1) return
             this._icons.splice(index, 1)
 
             if (icon.timeout) {
@@ -124,6 +128,7 @@ export const TrayIndicator = GObject.registerClass(
             }
 
             const actor = icon.get_parent()
+            icon.disconnectObject(actor)
             actor.remove_child(icon)
             actor.destroy()
 
@@ -157,7 +162,8 @@ export const TrayIndicator = GObject.registerClass(
         }
 
         _refreshIcons(overflow) {
-            this._icons.forEach((icon) => {
+            const icons = [...this._icons]
+            icons.forEach((icon) => {
                 if (icon.inOverflow != overflow) {
                     this.removeIcon(icon, true)
                     this.addIcon(icon)
@@ -166,7 +172,7 @@ export const TrayIndicator = GObject.registerClass(
         }
 
         _getButtonStyle() {
-            let style
+            let style = ""
             if (!this._overflow) {
                 style = `margin: ${this._margin.vertical}px ${this._margin.horizontal}px; padding: ${this._padding.vertical}px ${this._padding.horizontal}px`
             }
@@ -189,6 +195,7 @@ export const TrayIndicator = GObject.registerClass(
         setEffect(contrast, saturation, brightness) {
             this._icons.forEach((icon) => {
                 let brightnessContrast = icon.get_effect("brightnessContrast")
+                if (!brightnessContrast) return
                 brightnessContrast.set_contrast(contrast / 100)
                 brightnessContrast.set_brightness(brightness / 100)
 
@@ -198,9 +205,13 @@ export const TrayIndicator = GObject.registerClass(
         }
 
         _onDestroy() {
-            this._icons.forEach((icon) => {
+            const icons = [...this._icons]
+            icons.forEach((icon) => {
                 this.removeIcon(icon, true)
             })
+            this._appManager = null
+            this._settings = null
+            super._onDestroy()
         }
     }
 )
